@@ -1,0 +1,521 @@
+---
+title: Regression Modelling to Predict the Age of the Abaolne based on its Physical
+  Characteristics
+author: "Minoli Munasinghe"
+date: "2023-04-10"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+Read the dataset from UCI machine learning repository
+
+```{r}
+# Read the dataset into a data frame
+abalone_df <- read.csv("http://archive.ics.uci.edu/ml/machine-learning-databases/abalone/abalone.data", header=FALSE)
+# Print first five rows in the data set
+head(abalone_df)
+```
+Add column names to the data set
+
+```{r}
+# add column names
+names(abalone_df) <- c("sex", "length", "diameter", "height", "weight.whole",
+                    "weight.shucked", "weight.viscera", "weight.shell", "rings")
+```
+
+Get the number of observations in the data
+
+```{r}
+# numbers of rows in the data set
+nrow(abalone_df)
+```
+
+Get the number of columns in the data
+```{r}
+ncol(abalone_df)
+```
+The data set has 4177 observations with 9 variables
+
+Get the number of missing values
+
+```{r}
+# Check for the missing values
+sum(is.na(abalone_df))
+```
+The data set does not have any missing values
+
+Get the structure of data
+
+```{r}
+str(abalone_df)
+```
+According to the data, there is one categorical variable (sex) and all the oher variables are continuous. The response variable of the model is rings.
+
+The distribution of response variable
+
+```{r}
+library(ggplot2)
+ggplot(aes(x = rings),data = abalone_df)+
+geom_histogram(binwidth = 0.5,fill="dark orange") +
+scale_x_continuous(breaks = abalone_df$rings)+
+ylab("Frequency of Rings")+
+xlab("Number of Rings")+
+ggtitle("The Frequency Distribution of Abalone Rings")+
+theme_classic() +
+theme(plot.title = element_text(hjust = 0.5))
+```
+```{r}
+library(moments)
+skewness(abalone_df$rings)
+```
+
+The distribution of observations by number of rings is observed using the above histogram and according to its skewness value of 1.1, we can consider that it is moderately positively skewed and the distribution is also not symmetrically distributed around the mean. 
+
+
+```{r}
+library(ggplot2)
+ggplot(aes(x = sex),data = abalone_df)+
+  geom_bar(stat="count",width = 0.3,fill = "dark orange")+
+  theme(legend.position = "None")+
+  ggtitle("Sex Distribution of abalone")
+```
+Observe the distribution of other variables
+
+```{r}
+boxplot(abalone_df[,c(2,3,4,5,6,8)],col = "dark orange") # boxplot to check possible outliers
+
+```
+
+According to the boxplots drawn for all the other variables, we can see that all variables have outlier values in the data.
+
+Correlation plot to observe the relationship between variables
+
+```{r}
+library(GGally)
+
+
+ggcorr(abalone_df[,c(2,3,4,5,6,8,9)], label = T, label_size = 2.9, hjust = 1, layout.exp = 3) +
+  scale_fill_gradient(low = "dark orange", high = "red")
+ 
+
+```
+
+According to the correlation plot, we can see that the predictor variables are highly correlated and therefore multicollinearity exists.
+
+Pairwise Scatterplot
+
+```{r}
+# Plot the scatter matrix
+pairs(abalone_df[,2:9], main = "Scatterplot Matrix of Abalone Data",col = "dark orange",cex=0.1,cex.main = 0.9)
+```
+```{r}
+abalone_df$trn_rings = abalone_df$rings+1.5
+
+```
+```{r}
+library(ggplot2)
+ggplot(aes(x = trn_rings),data = abalone_df)+
+geom_histogram(binwidth = 0.5,fill="dark orange") +
+scale_x_continuous(breaks = abalone_df$rings)+
+ylab("Frequency of Rings")+
+xlab("Number of Rings")+
+ggtitle("The Frequency Distribution of Abalone Rings")+
+theme_classic() +
+theme(plot.title = element_text(hjust = 0.5))
+```
+
+Handling the outlier data
+
+```{r}
+
+find_outliers = function(x){
+  q1 = quantile(x,probs = 0.25)
+  q3 = quantile(x,probs = 0.75)
+  
+  IQR = q3 - q1
+  
+  status = x < q1 - (IQR*1.5) | x > q3 + (IQR*1.5)
+
+}
+
+remove_outliers=function(processed_data,cols = names(processed_data)) {
+
+    for (col in cols) {
+        processed_data = processed_data[!find_outliers(processed_data[[col]]), ]
+    } 
+  return(processed_data)
+}
+
+abalone_df = remove_outliers(abalone_df,cols = 
+                                   c("length","diameter","height","weight.whole",
+                                    "weight.shucked","weight.viscera","weight.shell"))
+dim(abalone_df)
+```
+According to the results, current dataset without outliers has 4013 records, thus only 164 records have been removed due to outlier detection.
+
+Convert the categorical variable  *sex* into numeric variable
+
+```{r}
+# Convert sex to factor
+sex_factor <- as.factor(abalone_df$sex)
+
+# Convert factor levels to numeric values
+abalone_df["sex"] = as.numeric(sex_factor)
+
+```
+
+Data Normalization
+
+```{r}
+abalone_df = scale(abalone_df,scale = TRUE,center = TRUE)
+
+```
+
+Split the dataset in to training and testing set
+
+```{r}
+
+set.seed(2023)
+
+# Remove the 9th column (rings)
+abalone_df <- subset(abalone_df, select = -rings)
+
+# Split data into training & testing
+sample <- sample(c(TRUE, FALSE), nrow(abalone_df), replace=TRUE, prob=c(0.80,0.20))
+train_set <- abalone_df[sample, ]
+test_set <- abalone_df[!sample, ]
+
+# Separate predictor and response data from training set
+x_train <- train_set[,-9]
+y_train <- train_set[,9]
+
+# Separate predictor and response data from testing set
+x_test <- test_set[,-9]
+y_test <- test_set[,9]
+
+```
+
+```{r}
+# -------------------------------Multiple Linear Regression --------------------------------------------
+
+```
+
+
+Fit the multiple linear regression model with training data including all predictor variables
+(Transformed response variable - log(rings))
+
+```{r}
+ml_model <- lm(trn_rings~., data = as.data.frame(train_set))
+summary(ml_model)
+```
+Making predictions from the trained multiple linear regression model on the testing set
+
+
+```{r}
+library(ModelMetrics)
+pred <- predict(ml_model, newdata=as.data.frame(x_test))
+
+data.frame(
+RMSE = caret::RMSE(pred, y_test),
+Rsquare = caret::R2(pred,y_test)
+)
+```
+
+
+```{r}
+plot(ml_model)
+```
+
+
+We can see that the assumptions of the linear regression is violated and therefore, we first need to remove multicollinearity among the predictor variables, so that the correlation among the predictors will be reduced to a considerable amount to get a better fitted model
+
+To remove the multicolinearity, I would choose principal component regressor, ridge regualarization and lasso regualrization
+
+PCR - Reducing the dimensions would transform th ecorrelated predictor variables into uncorrelated principal components which would reduce the multicolinearity.
+
+
+```{r}
+# ---------------------------Principal Component Regressor with 10-fold cross validation------------------
+
+library(caret)
+
+# Number of Components to Use
+hyperparams <- expand.grid(ncomp = c(1, 2, 3, 4,5,6,7,8)) 
+
+pcr.model <- train(trn_rings~., data = as.data.frame(train_set), method = "pcr",
+                  scale = TRUE,
+                  trControl = trainControl("cv", number = 10),
+                  tuneGrid=hyperparams
+)
+```
+
+
+```{r}
+# Print the best tuning parameter ncomp that minimize the cross-validation error, RMSE
+pcr.model$bestTune
+```
+
+
+```{r}
+# Summarize the final model
+summary(pcr.model$finalModel)
+
+```
+
+```{r}
+library(dplyr)
+
+train_predictions <- pcr.model %>% predict(x_train)
+data.frame(
+RMSE = caret::RMSE(train_predictions, y_train),
+Rsquare = caret::R2(train_predictions,y_train)
+)
+
+# Make predictions on test data
+predictions <- pcr.model %>% predict(x_test)
+data.frame(
+RMSE = caret::RMSE(predictions, y_test),
+Rsquare = caret::R2(predictions,y_test)
+)
+
+```
+
+99% of the variability in the data is explained by the first 7 components. However, the R squared value of test set is still low which is 0.4467
+
+
+Ridge Regression
+
+```{r}
+library(glmnet)
+
+# Create the design matrix
+cv.ridge <- cv.glmnet(x = x_train, y = as.matrix(y_train), alpha = 0, lambda =NULL)
+plot(cv.ridge)
+
+```
+```{r}
+# Optimal lambda
+cv.ridge$lambda.min
+
+# Fit the final model on the training data using optimal lambda
+ridge.model <- glmnet(x = x_train, y = as.matrix(y_train), alpha = 0, lambda = cv.ridge$lambda.min)
+# Display regression coefficients
+coef(model)
+
+```
+
+```{r}
+library(dplyr)
+
+train_predictions <- ridge.model %>% predict(x_train)
+data.frame(
+RMSE = caret::RMSE(train_predictions, y_train),
+Rsquared = caret::R2(train_predictions,y_train)
+)
+
+
+# Make predictions on the test data
+y_test = as.matrix(y_test)
+predictions <- ridge.model %>% predict(x_test)
+data.frame(
+RMSE = caret::RMSE(predictions, y_test),
+Rsquared = caret::R2(predictions,y_test)
+)
+
+```
+
+Lasso Regression
+
+
+```{r}
+# Create the design matrix
+cv.lasso <- cv.glmnet(x = x_train, y = as.matrix(y_train), alpha =1, lambda = NULL)
+plot(cv.lasso)
+
+```
+
+```{r}
+# Optimal lambda
+cv.lasso$lambda.min
+
+# Fit the final model on the training data using optimal lambda
+lasso.model <- glmnet(x = x_train, y = as.matrix(y_train), alpha = 1, lambda = cv.lasso$lambda.min)
+# Display regression coefficients
+coef(model)
+```
+
+```{r}
+train_predictions <- lasso.model %>% predict(x_train)
+data.frame(
+RMSE = caret::RMSE(train_predictions, y_train),
+Rsquared = caret::R2(train_predictions,y_train)
+)
+
+
+# Make predictions on the test data
+
+predictions <- lasso.model %>% predict(x_test)
+data.frame(
+RMSE = caret::RMSE(predictions, y_test),
+Rsquared = caret::R2(predictions,y_test)
+)
+```
+Support Vector Regressor
+
+```{r}
+
+#Load Library
+library(e1071)
+ library(caret)
+
+model <- svm(trn_rings ~ ., data = as.data.frame(train_set))
+y_pred_train = predict(model, x_train)
+data.frame(
+  RMSE = caret::RMSE(y_pred_train, y_train),
+  Rsquare = caret::R2(y_pred_train, y_train)
+)
+#Predict using SVM regression
+y_pred = predict(model, x_test)
+data.frame(
+  RMSE = caret::RMSE(y_pred, y_test),
+  Rsquare = caret::R2(y_pred, y_test)
+)
+
+```
+
+
+Random Forest Regressor
+
+```{r}
+# ---------------------------------------Random Forest Regressor ---------------------------
+library(caret)
+train.control <- trainControl(method = "cv", number = 10)
+# Train the model
+rf.model <- train(trn_rings ~., data = train_set, method = "rf",
+                      trControl = train.control,
+                      tuneLength=20)
+print(rf.model) # Summarize the results
+plot(rf.model, col = "dark orange")
+
+
+# Make predictions on test data
+predictions <- rf.model %>% predict(x_test)
+
+data.frame(
+  RMSE = caret::RMSE(predictions, y_test),
+  Rsquare = caret::R2(predictions, y_test)
+)
+varImp(rf.model)
+varImp(rf.model,conditional = TRUE)
+```
+
+Decision Tree Regressor
+
+```{r}
+#-------------------Decision Tree-------------------------------------------------------------
+library(rpart)
+library(rpart.plot)
+library(dplyr)
+library(caret)
+
+train.control <- trainControl(method = "cv", number = 10)
+# Train the model
+dt.model <- train(trn_rings ~., data = train_set, method = "rpart",
+               trControl = train.control,
+               tuneLength=20)
+print(dt.model) # Summarize the results
+plot(dt.model,col = "dark orange")
+
+
+# Make predictions on test data
+predictions <- dt.model %>% predict(x_test)
+
+data.frame(
+  RMSE = caret::RMSE(predictions, y_test),
+  Rsquare = caret::R2(predictions, y_test)
+)
+```
+
+
+Neural Network
+
+```{r}
+
+library(neuralnet)
+n <- names(as.data.frame(train_set))
+n
+
+nn <- neuralnet(trn_rings ~ .,data=train_set,hidden=c(3,3), act.fct = "logistic",linear.output=T,stepmax=1e7)
+# Visual plot of the model
+plot(nn)
+
+
+```
+```{r}
+#train  set
+y_pred_train <- compute(nn, x_train)
+data.frame(
+  RMSE = caret::RMSE(y_pred_train$net.result, y_train),
+  Rsquare = caret::R2(y_pred_train$net.result, y_train)
+)
+
+# test set
+y_pred <- compute(nn, x_test)
+data.frame(
+  RMSE = caret::RMSE(y_pred$net.result, y_test),
+  Rsquare = caret::R2(y_pred$net.result, y_test)
+)
+```
+
+Bayesian Regression
+
+
+```{r}
+suppressPackageStartupMessages(library(rstanarm))
+model_bayes<- stan_glm(trn_rings~., data=as.data.frame(train_set), family = gaussian(),
+prior=normal(0, 5),seed=111)
+```
+
+```{r}
+summary(model_bayes)
+```
+posterior_predictive checks
+
+
+```{r}
+y_pred = predict(model_bayes,newdata = as.data.frame(x_test))
+data.frame(
+  RMSE = caret::RMSE(y_pred, y_test),
+  Rsquare = caret::R2(y_pred, y_test)
+)
+
+y_pred_train = predict(model_bayes,newdata = as.data.frame(x_train))
+data.frame(
+  RMSE = caret::RMSE(y_pred_train, y_train),
+  Rsquare = caret::R2(y_pred_train, y_train)
+)
+```
+
+```{r}
+suppressPackageStartupMessages(library(bayesplot))
+mcmc_dens(model_bayes, pars = c("height"))+
+vline_at(model_bayes$coefficients[5], col="red")
+```
+
+```{r}
+suppressPackageStartupMessages(library(bayesplot))
+mcmc_dens(model_bayes, pars = c("weight.shucked"))+
+vline_at(model_bayes$coefficients[7], col="red")
+```
+
+
+
+```{r}
+library(keras)
+
+model <- keras_model_sequential() 
+
+```
+```
+
