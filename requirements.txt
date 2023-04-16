@@ -1,0 +1,12 @@
+The R packages required to install are included here.
+
+ggplot2
+caret
+moments
+GGalley
+ModelMetrics
+dplyr
+glmnet
+e1071
+rpart
+nnet
