@@ -6,3 +6,6 @@
 4. An explonatory data analysis is performed initially to get a clear idea about the distribution of the data
 5. The models include multiple linear regression, Principal Component Regressor (PCR), Ridge Regressor, Lasso Regressor, Decision Tree Regressor, Random Forest Regressor, 
 Support Vector Regressor, Neural Network, and Bayesian Regression model.
+
+The dataset can be found from the below reference.
+UCI Machine Learning Repository: Abalone Data Set. (n.d.). https://archive.ics.uci.edu/ml/datasets/Abalone
