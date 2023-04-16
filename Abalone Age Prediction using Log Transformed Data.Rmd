@@ -674,7 +674,7 @@ Boxplot representation of RMSE values of each model
 
 ```{r}
 RMSE_data <- data.frame(Model = c("MLR", "PCR", "Ridge","Lasso","SVM","DT","RF","NN","Bayes"),
-                      RMSE = c(0.6818485, 0.6760124	, 0.6887168,0.6758897,0.6301614	,0.6295017,0.7247068,0.8469765,0.6669065))
+                      RMSE = c(0.6818485, 0.6760124	, 0.6887168,0.6758897,0.6301614	,0.7247068,0.6295017,0.8469765,0.6669065))
 
 ggplot(RMSE_data, aes(x = Model, y = RMSE)) + geom_boxplot(col = "navy blue") + ylab("RMSE - 10-fold CV")
 ```
