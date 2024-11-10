@@ -1,5 +1,5 @@
 ---
-title: Regression Modelling to Predict the Age of the Abaolne based on its Physical
+title: Regression Modelling to Predict the Age of the Abalone based on its Physical
   Characteristics - Log Transformed Response
 author: "Minoli Munasinghe"
 date: "2023-04-10"
