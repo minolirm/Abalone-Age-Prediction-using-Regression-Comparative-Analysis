@@ -10,8 +10,7 @@ This project investigates the effectiveness of multiple regression and machine l
 ---
 
 ## 📘 Overview  
-This project investigates the effectiveness of multiple regression and machine learning models for predicting the **age of abalones** using their physical characteristics.  
-The **Abalone dataset** from the **UCI Machine Learning Repository** is used, which includes measurements such as length, diameter, height, and shell weight.
+This project investigates the effectiveness of multiple regression and machine learning models for predicting the **age of abalones** using their physical characteristics. The **Abalone dataset** from the **UCI Machine Learning Repository** is used, which includes measurements such as length, diameter, height, and shell weight.
 
 Accurately predicting abalone age is essential for the **fisheries sector**, as age directly impacts the **economic value** of abalone. Traditional age estimation by counting shell rings is time-consuming; hence, this project uses statistical and machine learning approaches to automate and improve prediction accuracy.
 
