@@ -50,10 +50,7 @@ Accurately predicting abalone age is essential for the **fisheries sector**, as 
 
 ### 🔹 Data Preprocessing  
 - Converted `Sex` categorical variable to numeric.  
-- Applied **Standard Scaling** to all predictors:  
-  \[
-  x_{scaled} = \frac{x - mean(x)}{sd(x)}
-  \]
+- Applied **Standard Scaling** to all numeric predictors:  
 - Split dataset into **80% training** and **20% testing** subsets.  
 - Applied **feature engineering** (scaling + log transformation).  
 - Used **10-fold cross-validation** for all models to avoid overfitting and find optimal hyperparameters.
